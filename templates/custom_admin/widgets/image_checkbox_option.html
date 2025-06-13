@@ -1,0 +1,10 @@
+{% for group, options, index in widget.optgroups %}
+    {% for option in options %}
+       <label>
+    <input type="checkbox" name="{{ widget.name }}" value="{{ widget.value|stringformat:'s' }}"
+           {% if widget.attrs.checked %} checked{% endif %}>
+    <img src="{{ widget.image_url }}" alt="{{ widget.label }}" style="width: 80px; height: auto;">
+</label>
+
+    {% endfor %}
+{% endfor %}

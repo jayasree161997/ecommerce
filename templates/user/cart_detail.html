@@ -1,0 +1,363 @@
+{% extends "layouts/mainsecond.html" %}
+{% load static %}
+{% load cart_extras %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+{% endblock %}
+
+{% block body %}
+{% if messages %}
+  <ul>
+    {% for message in messages %}
+      <li style="color: green;">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6 text-center text-success mb-0">
+                <i class="fas fa-shopping-cart me-3"></i>Your Shopping Cart
+            </h1>
+        </div>
+    </div>
+
+    {% if coupon_error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>{{ coupon_error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card border-success shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-box me-2"></i>Cart Items</h5>
+                </div>
+                <div class="card-body bg-white">
+                    {% for item in cart_items %}
+                    <div class="card border-success border-opacity-25 mb-3 {% if item.product.is_deleted or not item.product.category.is_active or item.product.stock == 0 %}opacity-50{% endif %}">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-2 text-center">
+                                    <img src="{{ item.product.main_image.url }}" class="img-fluid rounded border border-success border-opacity-25" style="width: 120px; height: 120px; object-fit: cover;">
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="text-success">{{ item.product.name }}</h5>
+                                    {% if item.product.is_deleted or not item.product.category.is_active or item.product.stock == 0 %}
+                                    <p class="text-danger fw-bold"><i class="fas fa-ban me-1"></i>This product is currently unavailable</p>
+                                    {% else %}
+                                    <p><strong>Price:</strong> ₹{{ item.price }}</p>
+                                    <p><strong>Stock:</strong> {{ item.product.stock }}</p>
+                                    {% endif %}
+
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="me-3">Quantity:</span>
+                                        <div class="btn-group me-3">
+                                            <button type="button" class="btn btn-outline-success btn-sm" 
+                                                        onclick="changeQuantity('{{ item.id }}', -1, {{ item.price }}, {{ item.product.stock }})"
+                                                        {% if item.product.is_deleted or not item.product.category.is_active or item.product.stock == 0 %}disabled{% endif %}>
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                
+                                                <input type="number" id="quantity-{{ item.id }}" class="form-control form-control-sm text-center" 
+                                                       value="{{ item.quantity }}" min="0" max="6" style="max-width: 70px;"
+                                                       onchange="updatePrice('{{ item.id }}', {{ item.price }}, {{ item.product.stock }})"
+                                                       {% if item.product.is_deleted or not item.product.category.is_active or item.product.stock == 0 %}disabled{% endif %}>
+                                                
+                                                <button type="button" class="btn btn-outline-success btn-sm" 
+                                                        onclick="changeQuantity('{{ item.id }}', 1, {{ item.price }}, {{ item.product.stock }})"
+                                                        {% if item.product.is_deleted or not item.product.category.is_active or item.product.stock == 0 %}disabled{% endif %}>
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                        </div>
+                                    </div>
+
+                                    <p class="fw-bold text-success fs-5">Total: ₹<span id="total-{{ item.id }}">{{ item.price|multiply:item.quantity|floatformat:2 }}</span></p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'remove_from_cart' item.product.id %}" class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i>Remove</a>
+                                        <a href="{% url 'move_to_wishlist' item.product.id %}" class="btn btn-outline-success btn-sm"><i class="fas fa-heart me-1"></i>Move to Wishlist</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="col-lg-4">
+            <div class="card border-success shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-calculator me-2"></i>Cart Summary</h5>
+                </div>
+                <div class="card-body bg-light">
+                    <div class="mb-3">
+                        <strong>Total Items:</strong>
+                        <span id="cart-total-items" class="badge bg-success fs-6 float-end">{{ total_items }}</span>
+                    </div>
+
+                    {% if cart.coupon_code %}
+                    <p>Original Price: <del id="original-price">₹{{ total_after_offer|floatformat:2 }}</del></p>
+                    <p>Coupon Discount ({{ cart.coupon_code }}): -₹ <span id="coupon-discount">{{ discount_amount|default:0|floatformat:2 }}</span></p>
+                    <hr>
+                    <h4>Total: ₹<span id="cart-total-price">{{ final_price|floatformat:2 }}</span></h4>
+                    <div class="alert alert-success mt-3"><i class="fas fa-tag me-2"></i>Coupon Applied: <strong>{{ cart.coupon_code }}</strong></div>
+                    <a href="{% url 'remove_coupon' %}" class="btn btn-outline-danger btn-sm w-100 mb-3"><i class="fas fa-times me-1"></i>Remove Coupon</a>
+                    {% else %}
+                    <h4>Total Price: ₹<span id="cart-total-price">{{ total_after_offer|floatformat:2 }}</span></h4>
+                    <form method="post" action="{% url 'apply_coupon' %}" class="mb-3">
+                        {% csrf_token %}
+                        {{ coupon_form.as_p }}
+                        <button type="submit" class="btn btn-success w-100"><i class="fas fa-ticket-alt me-2"></i>Apply Coupon</button>
+                    </form>
+                    {% endif %}
+
+                    <button id="showCoupons" class="btn btn-outline-success w-100 mb-3"><i class="fas fa-tags me-2"></i>View Available Coupons</button>
+
+                    <div id="couponList" class="border border-success rounded p-3 mb-3 bg-white" style="display: none;">
+                        <span id="closeCouponList" class="position-absolute top-0 end-0 m-2 text-danger fs-4" style="cursor: pointer;">&times;</span>
+                        <ul id="couponItems" class="list-unstyled mt-3"></ul>
+                    </div>
+
+                    {% if available_coupons %}
+                    {% for coupon in available_coupons %}
+                    <div class="card border-success border-opacity-50 mb-2">
+                        <div class="card-body bg-success bg-opacity-10 py-2">
+                            <h6 class="text-success mb-1">{{ coupon.code }} – {{ coupon.discount }}% OFF</h6>
+                            <p class="small mb-1">{{ coupon.description }}</p>
+                            {% if coupon.code|lower == "monsoon" %}
+                                {% if total_after_offer < 30000 %}
+                                <div class="alert alert-danger py-1 mb-1"><small><i class="fas fa-ban me-1"></i>Requires minimum ₹30,000</small></div>
+                                {% else %}
+                                <div class="alert alert-success py-1 mb-1"><small><i class="fas fa-check me-1"></i>Eligible for Monsoon Offer</small></div>
+                                {% endif %}
+                            {% endif %}
+                            <small class="text-muted">Valid: {{ coupon.valid_from }} - {{ coupon.valid_until }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="alert alert-secondary text-center"><small>No coupons available at the moment.</small></div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <a href="{% url 'checkoutpage' %}" class="btn btn-success btn-lg"><i class="fas fa-credit-card me-2"></i>Proceed to Checkout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% block extra_js %}
+<script>
+
+    
+
+
+function changeQuantity(itemID, change, price, stock) {
+            let quantityInput = document.getElementById('quantity-' + itemID);
+            let newQuantity = parseInt(quantityInput.value) + change;
+        
+            updatePrice(itemID, price, stock, newQuantity);
+        }
+        
+        function updatePrice(itemID, price, stock, newQuantity = null) {
+            let quantityInput = document.getElementById('quantity-' + itemID);
+            //let totalItemPrice = document.getElementById('total-' + itemID);
+            //let cartTotalPrice = document.getElementById('cart-total-price');
+            let cartTotalItems = document.getElementById('cart-total-items');
+            
+            const totalItemPrice = document.getElementById('total-' + itemID);
+            let cartTotalPrice = document.getElementById('cart-total-price');
+            const originalPrice = document.getElementById('original-price');
+            const couponDiscount = document.getElementById('coupon-discount');
+        
+            let quantity = newQuantity !== null ? newQuantity : parseInt(quantityInput.value);
+        
+            // Set quantity limits
+            let maxAllowed = 5;  
+            let minAllowed = 1;  
+        
+            // Check if quantity is out of range
+           if (quantity > stock) {
+    Swal.fire({
+        icon: 'info',
+        title: 'Stock Limit',
+        text: 'Maximum available stock is ' + stock,
+        confirmButtonColor: '#ffcc00',
+        confirmButtonText: 'OK'
+    });
+    quantity = stock;
+    quantityInput.value = quantity;
+    return;
+} else if (quantity > maxAllowed) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Limit Reached',
+        text: 'You can add a maximum of ' + maxAllowed + ' items.',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+    });
+    quantity = maxAllowed;
+    quantityInput.value = quantity;
+    return;
+} else if (quantity < minAllowed) {
+    Swal.fire({
+        icon: 'error',
+        title: 'Invalid Quantity',
+        text: 'Minimum quantity should be ' + minAllowed,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'OK'
+    });
+    quantity = minAllowed;
+    quantityInput.value = quantity;
+    return;
+}
+        
+            quantityInput.value = quantity; // Set the corrected quantity in the input field
+        
+            let itemTotal = price * quantity;
+            totalItemPrice.innerText = '' + itemTotal.toFixed(2);
+        
+            // AJAX call to update the backend
+            fetch("{% url 'update_cart_quantity' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    item_id: itemID,
+                    quantity: quantity
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("AJAX response:", data);
+    if (data.coupon_percentage > 0) {
+    const original = data.total_price;
+    const discountPercentage = data.coupon_percentage;
+    const discountAmount = original * (discountPercentage / 100);
+    const finalTotal = original - discountAmount;
+
+    cartTotalItems.innerText = data.total_items;
+    originalPrice.innerText = original.toFixed(2);
+    couponDiscount.innerText = discountAmount.toFixed(2);
+    cartTotalPrice.innerText = finalTotal.toFixed(2);
+} else {
+    cartTotalItems.innerText = data.total_items;
+    cartTotalPrice.innerText = data.total_price.toFixed(2);
+}
+
+            })
+            .catch(error => {
+                console.error("Error updating cart:", error);
+                //Swal.fire({
+                //    icon: 'error',
+               //     title: 'Network Error',
+               //     text: 'Could not update cart. Please try again.',
+                //    confirmButtonColor: '#d33',
+                //    confirmButtonText: 'Retry'
+               // });
+            });
+        }        
+        
+
+
+
+
+
+
+        $(document).ready(function() {
+            $("#showCoupons").click(function() {
+                $.ajax({
+                    url: "{% url 'available_coupons' %}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(response) {
+                        let couponList = $("#couponItems");
+                        couponList.empty(); // Clear previous results
+                        
+                        if (response.coupons.length > 0) {
+                            response.coupons.forEach(function(coupon) {
+                                couponList.append(`<li><strong>${coupon.code}</strong> - ${coupon.discount}% off</li>`);
+                            });
+                            $("#couponList").show(); 
+                            // Show the coupon list
+                        } else {
+                            couponList.append("<li>No coupons available</li>");
+                            $("#couponList").show();
+                        }
+                    },
+                    error: function() {
+                        alert("Error fetching coupons. Please try again.");
+                    }
+                });
+            });
+        });
+        
+        $("#closeCouponList").click(function() {
+            $("#couponList").hide(); // Hide the coupon list
+        });
+
+ 
+
+
+
+
+
+        function checkStockUpdates() {
+            fetch("{% url 'check_stock_updates' %}")  // Call the Django view
+            .then(response => response.json())
+            .then(data => {
+                if (data.updated) {
+                    location.reload();  // Reload the page if stock has changed
+                }
+            })
+            .catch(error => console.error("Error checking stock updates:", error));
+        }
+    
+        setInterval(checkStockUpdates, 5000);
+
+
+        document.getElementById('showCoupons').addEventListener('click', function() {
+            var couponList = document.getElementById('couponList');
+            couponList.style.display = couponList.style.display === 'none' ? 'block' : 'none';
+        });
+    
+        // Close the coupons list
+        document.getElementById('closeCouponList').addEventListener('click', function() {
+            document.getElementById('couponList').style.display = 'none';
+        });
+
+
+
+
+        document.querySelectorAll('.remove-item').forEach(button => {
+    button.addEventListener('click', function (event) {
+        event.preventDefault();
+        let url = this.getAttribute('href');
+
+        fetch(url, { method: 'GET' })
+            .then(response => location.reload())  // ✅ Reloads cart immediately
+            .catch(error => console.error("Error removing product:", error));
+    });
+});
+    </script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+{% endblock body %}

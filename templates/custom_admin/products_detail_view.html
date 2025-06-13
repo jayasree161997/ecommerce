@@ -1,0 +1,229 @@
+{% extends 'custom_admin/index.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+    body {
+        background-color: #fef7f0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #5a5a5a;
+    }
+
+    .product-container {
+        max-width: 900px;
+        margin: 40px auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 5px 25px rgba(255, 182, 193, 0.15);
+        border: 2px solid #ffe4e6;
+    }
+
+    .product-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .product-header h2 {
+        color: #ff6b9d;
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .product-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+    }
+
+    .product-image {
+        flex: 1 1 300px;
+    }
+
+    .product-image img {
+        width: 100%;
+        border-radius: 15px;
+        object-fit: cover;
+        box-shadow: 0 4px 15px rgba(255, 182, 193, 0.2);
+        border: 3px solid #ffd1dc;
+    }
+
+    .product-image p {
+        text-align: center;
+        color: #ff6b9d;
+        font-style: italic;
+        padding: 20px;
+        background: #ffd1dc;
+        border-radius: 15px;
+        margin: 0;
+    }
+
+    .product-info {
+        flex: 2 1 400px;
+    }
+
+    .product-info p {
+        margin-bottom: 15px;
+        font-size: 1rem;
+        background: #fff5f8;
+        padding: 12px 15px;
+        border-radius: 12px;
+        border-left: 4px solid #ffb3d1;
+    }
+
+    .product-info strong {
+        color: #ff6b9d;
+        width: 130px;
+        display: inline-block;
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        margin-top: 25px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .btn-warning { 
+        background-color: #fff2cc; 
+        color: #b8860b;
+        border: 2px solid #ffd700;
+    }
+
+    .btn-warning:hover {
+        background-color: #ffd700;
+        color: white;
+    }
+
+    .btn-danger { 
+        background-color: #ffe6e6; 
+        color: #dc143c;
+        border: 2px solid #ffb3b3;
+    }
+
+    .btn-danger:hover {
+        background-color: #dc143c;
+        color: white;
+    }
+
+    .btn-secondary { 
+        background-color: #f0f0f0; 
+        color: #666;
+        border: 2px solid #ccc;
+    }
+
+    .btn-secondary:hover {
+        background-color: #666;
+        color: white;
+    }
+
+    .btn-success { 
+        background-color: #e8f5e8; 
+        color: #228b22;
+        border: 2px solid #90ee90;
+    }
+
+    .btn-success:hover {
+        background-color: #228b22;
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .product-content {
+            flex-direction: column;
+        }
+
+        .product-header h2 {
+            font-size: 1.6rem;
+        }
+
+        .product-info p {
+            font-size: 0.95rem;
+        }
+
+        .action-buttons {
+            justify-content: center;
+        }
+
+        .btn {
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+        }
+    }
+</style>
+{% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+<div class="product-container">
+    <div class="product-header">
+        <h2>{{ product.name }}</h2>
+    </div>
+
+    <div class="product-content">
+        <div class="product-image">
+            {% if product.main_image %}
+                <img src="{{ product.main_image.url }}" alt="Product Image">
+            {% else %}
+                <p>No image available</p>
+            {% endif %}
+        </div>
+
+        <div class="product-info">
+            <p><strong>Name:</strong>{{ product.name }}</p>
+            <p><strong>Description:</strong> {{ product.description }}</p>
+            <p><strong>Brand:</strong> {{ product.brand }}</p>
+            <p><strong>Price:</strong> ₹{{ product.price }}</p>
+            <p><strong>Stock:</strong> {{ product.stock }}</p>
+            <p><strong>Sold:</strong> {{ product.sold }}</p>
+            <p><strong>Material:</strong> {{ product.material }}</p>
+            <p><strong>Dimensions:</strong> {{ product.dimensions }}</p>
+            <p><strong>Weight:</strong> {{ product.weight }} kg</p>
+            <p><strong>Warranty:</strong> {{ product.warranty }}</p>
+            <p><strong>Category:</strong> {{ product.category.name }}</p>
+            <p><strong>Offer:</strong>
+                {% if product.productoffer_set.exists %}
+                    Offer Applied
+                {% else %}
+                    No Offer
+                {% endif %}
+            </p>
+
+            <div class="action-buttons">
+                <a href="{% url 'custom_admin:edit_products' product.id %}" class="btn btn-warning">Edit</a>
+                <a href="{% url 'custom_admin:delete_products' product.id %}" class="btn btn-danger">Delete</a>
+                <a href="{% url 'custom_admin:products_view' %}" class="btn btn-secondary">Back</a>
+
+                <a href="{% url 'custom_admin:add_offer' product.id %}" class="btn btn-success">Add Offer</a>
+                {% if product.productoffer_set.exists %}
+                    <a href="{% url 'custom_admin:edit_offer' product.productoffer_set.first.id %}" class="btn btn-warning">Edit Offer</a>
+                    <a href="{% url 'custom_admin:remove_offer' product.id %}" class="btn btn-secondary">Remove Offer</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

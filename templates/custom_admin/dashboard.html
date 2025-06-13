@@ -1,0 +1,453 @@
+{% extends 'custom_admin/index.html' %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-text">
+                <h1 class="dashboard-title">
+                    <i class="fas fa-chart-line me-3"></i>Analytics Dashboard
+                </h1>
+                <p class="dashboard-subtitle">Track your sales performance and insights</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-card">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div>
+                        <span class="stat-label">Total Sales</span>
+                        <span class="stat-value">Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-card">
+            <div class="filter-header">
+                <h3><i class="fas fa-filter me-2"></i>Time Period</h3>
+                <p>Select the time range for your analytics</p>
+            </div>
+            <div class="filter-buttons">
+                <a href="?filter=yearly" class="filter-btn {% if filter_type == 'yearly' %}active{% endif %}">
+                    <i class="fas fa-calendar-alt me-2"></i>Yearly View
+                </a>
+                <a href="?filter=monthly" class="filter-btn {% if filter_type == 'monthly' %}active{% endif %}">
+                    <i class="fas fa-calendar me-2"></i>Monthly View
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <!-- Top Selling Products Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <h3><i class="fas fa-box me-2"></i>Top Selling Products</h3>
+                    <p>Best performing products by quantity sold</p>
+                </div>
+                <div class="chart-actions">
+                    <button class="action-btn" onclick="downloadChart('topSellingProductsChart')">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="topSellingProductsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Selling Categories Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <h3><i class="fas fa-tags me-2"></i>Top Selling Categories</h3>
+                    <p>Best performing categories by quantity sold</p>
+                </div>
+                <div class="chart-actions">
+                    <button class="action-btn" onclick="downloadChart('topSellingCategoriesChart')">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="topSellingCategoriesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Dashboard Styles */
+.dashboard-container {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.dashboard-subtitle {
+    color: #718096;
+    margin: 0.5rem 0 0 0;
+    font-size: 1.1rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.stat-card i {
+    font-size: 1.5rem;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.filter-section {
+    margin-bottom: 2rem;
+}
+
+.filter-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.filter-header {
+    margin-bottom: 1.5rem;
+}
+
+.filter-header h3 {
+    color: #2d3748;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.filter-header p {
+    color: #718096;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid #e2e8f0;
+    color: #4a5568;
+    background: #f7fafc;
+}
+
+.filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: #667eea;
+    border-color: #667eea;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.chart-title h3 {
+    color: #2d3748;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.chart-title p {
+    color: #718096;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.chart-container {
+    padding: 2rem;
+    position: relative;
+    height: 400px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+    
+    .dashboard-title {
+        font-size: 2rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-buttons {
+        justify-content: center;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-header,
+    .filter-card,
+    .chart-card {
+        padding: 1rem;
+    }
+    
+    .chart-container {
+        padding: 1rem;
+        height: 300px;
+    }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parse data from Django template
+    var topProducts = JSON.parse('{{ top_selling_products|safe }}');
+    var topCategories = JSON.parse('{{ top_selling_categories|safe }}');
+
+    // Extract data for charts
+    var productNames = topProducts.map(item => item.product__name);
+    var productSales = topProducts.map(item => item.total_sold);
+    var categoryNames = topCategories.map(item => item.name);
+    var categorySales = topCategories.map(item => item.total_sold);
+
+    // Modern color palette
+    var gradientColors = [
+        'rgba(102, 126, 234, 0.8)',
+        'rgba(118, 75, 162, 0.8)',
+        'rgba(255, 107, 107, 0.8)',
+        'rgba(255, 193, 7, 0.8)',
+        'rgba(32, 201, 151, 0.8)',
+        'rgba(247, 127, 0, 0.8)',
+        'rgba(116, 185, 255, 0.8)',
+        'rgba(162, 155, 254, 0.8)'
+    ];
+
+    var borderColors = [
+        'rgba(102, 126, 234, 1)',
+        'rgba(118, 75, 162, 1)',
+        'rgba(255, 107, 107, 1)',
+        'rgba(255, 193, 7, 1)',
+        'rgba(32, 201, 151, 1)',
+        'rgba(247, 127, 0, 1)',
+        'rgba(116, 185, 255, 1)',
+        'rgba(162, 155, 254, 1)'
+    ];
+
+    // Chart configuration
+    const chartConfig = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: 'white',
+                bodyColor: 'white',
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                displayColors: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.05)',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#718096',
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                },
+                ticks: {
+                    color: '#718096',
+                    font: {
+                        size: 12
+                    },
+                    maxRotation: 45
+                }
+            }
+        }
+    };
+
+    // Top Selling Products Chart
+    var ctx1 = document.getElementById('topSellingProductsChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: productNames,
+            datasets: [{
+                label: 'Quantity Sold',
+                data: productSales,
+                backgroundColor: gradientColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: chartConfig
+    });
+
+    // Top Selling Categories Chart
+    var ctx2 = document.getElementById('topSellingCategoriesChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: categoryNames,
+            datasets: [{
+                label: 'Quantity Sold',
+                data: categorySales,
+                backgroundColor: gradientColors,
+                borderColor: borderColors,
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+            }]
+        },
+        options: chartConfig
+    });
+});
+
+// Download chart function
+function downloadChart(chartId) {
+    const canvas = document.getElementById(chartId);
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = chartId + '.png';
+    a.click();
+}
+</script>
+{% endblock %}

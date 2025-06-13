@@ -1,0 +1,789 @@
+{% extends "layouts/mainsecond.html" %}
+
+{% load static %}
+
+{% block body %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --primary-color:rgb(87, 143, 73);
+            --primary-hover:rgb(87, 143, 73);
+            --secondary-color: #f8fafc;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --bg-light: #f9fafb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --gradient-primary: linear-gradient(135deg,rgb(107, 157, 102) 0%,rgb(13, 109, 39) 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .profile-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .alert {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
+            border: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 1.5rem 2rem;
+            position: relative;
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        /* Django form styling overrides */
+        .card-body p {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .card-body label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-body input[type="text"],
+        .card-body input[type="email"],
+        .card-body input[type="tel"],
+        .card-body input[type="password"] {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+        .card-body input[type="text"]:focus,
+        .card-body input[type="email"]:focus,
+        .card-body input[type="tel"]:focus,
+        .card-body input[type="password"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .card-body input[type="text"]:disabled,
+        .card-body input[type="email"]:disabled,
+        .card-body input[type="tel"]:disabled {
+            background: var(--bg-light);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .card-body .helptext {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .card-body .errorlist {
+            color: var(--danger-color);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            list-style: none;
+            padding: 0;
+        }
+
+        .card-body .errorlist li {
+            margin-bottom: 0.25rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            align-items: start;
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-control:disabled {
+            background: var(--bg-light);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.25rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg,rgb(26, 203, 26) 0%,rgb(40, 74, 19) 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-light);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .address-grid {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .address-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .address-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .address-info {
+            margin-bottom: 1rem;
+        }
+
+        .address-info div {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .address-info strong {
+            color: var(--text-primary);
+            min-width: 80px;
+        }
+
+        .address-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .address-actions .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .card {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .profile-title {
+                font-size: 2rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .card-header {
+                padding: 1.25rem 1.5rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-group .btn {
+                width: 100%;
+            }
+
+            .address-card {
+                padding: 1.25rem;
+            }
+
+            .address-actions {
+                justify-content: center;
+                margin-top: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .floating-action {
+                bottom: 1rem;
+                right: 1rem;
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .profile-title {
+                font-size: 1.75rem;
+            }
+
+            .card-header h2 {
+                font-size: 1.25rem;
+            }
+
+            .btn {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="container">
+        <div class="profile-header">
+            <h1 class="profile-title">My Profile</h1>
+            <p class="profile-subtitle">Manage your account settings and preferences</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="form-grid">
+            <!-- Account Information -->
+            <div class="form-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-user"></i> Account Information</h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            {% csrf_token %}
+                            
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-envelope"></i> Email Address</label>
+                                <input type="email" name="original_email" value="{{ request.user.email }}" class="form-control" disabled>
+                            </div>
+                            
+                            {{ user_form.as_p }}
+                            {{ profile_form.as_p }}
+
+                            {% if request.user.is_superuser %}
+                                <script>
+                                    document.querySelectorAll("input").forEach(input => input.disabled = true);
+                                </script>
+                            {% endif %}
+                            
+                            <div class="btn-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change -->
+            <div class="form-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-lock"></i> Change Password</h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{% url 'change_password' %}">
+                            {% csrf_token %}
+
+                            <div class="form-group">
+                                <label for="password" class="form-label"><i class="fas fa-key"></i> New Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter new password" required>
+                                    <button class="password-toggle" type="button" onclick="togglePassword('password', this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirm_password" class="form-label"><i class="fas fa-key"></i> Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-enter password" required>
+                                    <button class="password-toggle" type="button" onclick="togglePassword('confirm_password', this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="btn-group">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-shield-alt"></i> Update Password
+                                </button>
+                                <a href="{% url 'user_profile' %}" class="btn btn-outline">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Addresses -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-map-marker-alt"></i> Billing Addresses</h2>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'add_Address' %}?next={% url 'user_profile' %}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add New Address
+                </a>
+                
+                <div class="address-grid">
+                    {% for address in request.user.address_set.all %}
+                        <div class="address-card">
+                            <div class="address-info">
+                                <div><strong><i class="fas fa-user"></i> Name:</strong> {{ address.first_name }} {{ address.last_name }}</div>
+                                <div><strong><i class="fas fa-home"></i> Address:</strong> {{ address.street_address }}</div>
+                            </div>
+                            <div class="address-actions">
+                                <a href="{% url 'edit_address' address.id %}" class="btn btn-warning">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                {% comment %} <a href="{% url 'delete_address' address.id %}" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a> {% endcomment %}
+                                <a href="#" class="btn btn-danger" onclick="confirmDelete('{% url 'delete_address' address.id %}')">
+    <i class="fas fa-trash"></i> Delete
+</a>
+
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <p>No addresses added yet. Click "Add New Address" to get started.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Add smooth scrolling for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add loading state to forms
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function() {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    submitBtn.disabled = true;
+                }
+            });
+        });
+
+
+      
+    function confirmDelete(deleteUrl) {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Yes, delete it!",
+            cancelButtonText: "Cancel"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = deleteUrl;
+            }
+        });
+    }
+
+
+    </script>
+</body>
+</html>
+{% endblock body %}

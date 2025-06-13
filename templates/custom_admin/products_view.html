@@ -1,0 +1,653 @@
+
+{% extends 'custom_admin/index.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+    /* Page Layout */
+    .product-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f8f9fa;
+        min-height: 100vh;
+    }
+
+    .page-header {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .page-title {
+        color: #2c3e50;
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* Search and Actions Bar */
+    .actions-bar {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .search-form {
+        display: flex;
+        gap: 10px;
+        flex: 1;
+        max-width: 400px;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 10px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0056b3;
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #1e7e34;
+    }
+
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+
+    .btn-warning:hover {
+        background: #e0a800;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+    }
+
+    .btn-info {
+        background: #17a2b8;
+        color: white;
+    }
+
+    .btn-info:hover {
+        background: #138496;
+    }
+
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    /* Product Table */
+    .table-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .product-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+    .product-table th {
+        background: #343a40;
+        color: white;
+        padding: 15px 12px;
+        text-align: center;
+        font-weight: 500;
+        font-size: 14px;
+        border: none;
+    }
+
+    .product-table td {
+        padding: 12px;
+        text-align: center;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 13px;
+    }
+
+    .product-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    .product-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Product Image */
+    .product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+    }
+
+    /* Status Badges */
+    .badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-success {
+        color: #28a745;
+        font-weight: 500;
+    }
+
+    .status-danger {
+        color: #dc3545;
+        font-weight: 500;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+    }
+
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        gap: 5px;
+    }
+
+    .pagination .page-item {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .pagination .page-item:hover {
+        background: #e9ecef;
+        border-color: #007bff;
+    }
+
+    .pagination .page-item.active {
+        background: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    /* Messages */
+    .messages {
+        margin-bottom: 20px;
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        border-color: #28a745;
+        color: #155724;
+    }
+
+    .alert-danger {
+        background: #f8d7da;
+        border-color: #dc3545;
+        color: #721c24;
+    }
+
+    .alert-info {
+        background: #d1ecf1;
+        border-color: #17a2b8;
+        color: #0c5460;
+    }
+
+    /* Deleted Products Section */
+    .deleted-section {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    .section-title {
+        color: #856404;
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .deleted-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .deleted-table th {
+        background: #fff3cd;
+        color: #856404;
+        padding: 12px;
+        text-align: left;
+        font-weight: 500;
+        border-bottom: 2px solid #ffeaa7;
+    }
+
+    .deleted-table td {
+        padding: 12px;
+        border-bottom: 1px solid #e9ecef;
+        vertical-align: middle;
+    }
+
+    .deleted-table tbody tr:hover {
+        background: #fffbf0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .product-table th:nth-child(6),
+        .product-table td:nth-child(6) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .actions-bar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-form {
+            max-width: none;
+        }
+
+        .product-table th:nth-child(3),
+        .product-table td:nth-child(3) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .product-container {
+            padding: 10px;
+        }
+
+        .product-table {
+            font-size: 12px;
+        }
+
+        .product-table th,
+        .product-table td {
+            padding: 8px 6px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+    }
+</style>
+
+<div class="product-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">📦 Product Management</h1>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Actions Bar -->
+    <div class="actions-bar">
+        <form method="GET" action="{% url 'custom_admin:products_view' %}" class="search-form">
+            <input type="text" name="query" class="search-input" placeholder="🔍 Search products..." value="{{ request.GET.query }}">
+            <button type="submit" class="btn btn-success">Search</button>
+        </form>
+        <a href="{% url 'custom_admin:add_products' %}" class="btn btn-primary">
+            ➕ Add Product
+        </a>
+    </div>
+
+    <!-- Products Table -->
+    <div class="table-container">
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Product Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Offer Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="productTableBody">
+                {% for product in products %}
+                <tr>
+                    <td>
+                        {% if product.main_image %}
+                            <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="product-image">
+                        {% else %}
+                            <img src="{% static 'images/default.jpg' %}" alt="Default" class="product-image">
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ product.name }}</strong>
+                    </td>
+                    <td>
+                        <strong>{{ product.price }}</strong>
+                    </td>
+                    <td>
+                        <span class="{% if product.stock > 10 %}status-success{% elif product.stock > 0 %}text-warning{% else %}status-danger{% endif %}">
+                            {{ product.stock }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if product.is_active %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if product.productoffer_set.exists %}
+                            <span class="status-success">✅ Offer Applied</span>
+                        {% else %}
+                            <span class="status-danger">❌ No Offer</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'custom_admin:edit_products' product.id %}" class="btn btn-warning btn-sm">✏️ Edit</a>
+                            <a href="{% url 'custom_admin:delete_products' product.id %}" class="btn btn-danger btn-sm">🗑️ Delete</a>
+                            <a href="{% url 'custom_admin:products_detail_view' product.id %}" class="btn btn-info btn-sm">👁️ View</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <p>No products found. <a href="{% url 'custom_admin:add_products' %}">Add your first product</a></p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <ul id="pagination" class="pagination"></ul>
+    </div>
+
+    <!-- Deleted Products Section -->
+    <div class="deleted-section">
+        <h2 class="section-title">
+            🗑️ Deleted Products
+        </h2>
+        <table class="deleted-table">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in inactive_products %}
+                <tr>
+                    <td><strong>{{ product.name }}</strong></td>
+                    <td>{{ product.description|truncatewords:15 }}</td>
+                    <td>
+                        <form method="post" action="{% url 'custom_admin:restore_product' product.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-sm">🔄 Restore</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-state">
+                        <p>No deleted products found.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const rowsPerPage = 8;
+        const tableBody = document.getElementById("productTableBody");
+        const pagination = document.getElementById("pagination");
+        let rows = Array.from(tableBody.querySelectorAll("tr"));
+        let currentPage = 1;
+
+        // Don't paginate if there's an empty state
+        if (rows.length === 1 && rows[0].querySelector('.empty-state')) {
+            return;
+        }
+
+        function displayTable(page) {
+            tableBody.innerHTML = "";
+            let start = (page - 1) * rowsPerPage;
+            let end = start + rowsPerPage;
+            let paginatedRows = rows.slice(start, end);
+
+            paginatedRows.forEach(row => tableBody.appendChild(row));
+            updatePaginationButtons();
+        }
+
+        function updatePaginationButtons() {
+            pagination.innerHTML = "";
+            let totalPages = Math.ceil(rows.length / rowsPerPage);
+
+            if (totalPages <= 1) return;
+
+            // Previous button
+            if (currentPage > 1) {
+                let prevBtn = document.createElement("li");
+                prevBtn.innerHTML = "‹";
+                prevBtn.classList.add("page-item");
+                prevBtn.addEventListener("click", function () {
+                    currentPage--;
+                    displayTable(currentPage);
+                });
+                pagination.appendChild(prevBtn);
+            }
+
+            // Page numbers
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                let firstBtn = document.createElement("li");
+                firstBtn.innerHTML = "1";
+                firstBtn.classList.add("page-item");
+                firstBtn.addEventListener("click", function () {
+                    currentPage = 1;
+                    displayTable(currentPage);
+                });
+                pagination.appendChild(firstBtn);
+
+                if (startPage > 2) {
+                    let dotsBtn = document.createElement("li");
+                    dotsBtn.innerHTML = "...";
+                    dotsBtn.classList.add("page-item");
+                    dotsBtn.style.cursor = "default";
+                    pagination.appendChild(dotsBtn);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                let btn = document.createElement("li");
+                btn.innerHTML = i;
+                btn.classList.add("page-item");
+                if (i === currentPage) btn.classList.add("active");
+                btn.addEventListener("click", function () {
+                    currentPage = i;
+                    displayTable(currentPage);
+                });
+                pagination.appendChild(btn);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    let dotsBtn = document.createElement("li");
+                    dotsBtn.innerHTML = "...";
+                    dotsBtn.classList.add("page-item");
+                    dotsBtn.style.cursor = "default";
+                    pagination.appendChild(dotsBtn);
+                }
+
+                let lastBtn = document.createElement("li");
+                lastBtn.innerHTML = totalPages;
+                lastBtn.classList.add("page-item");
+                lastBtn.addEventListener("click", function () {
+                    currentPage = totalPages;
+                    displayTable(currentPage);
+                });
+                pagination.appendChild(lastBtn);
+            }
+
+            // Next button
+            if (currentPage < totalPages) {
+                let nextBtn = document.createElement("li");
+                nextBtn.innerHTML = "›";
+                nextBtn.classList.add("page-item");
+                nextBtn.addEventListener("click", function () {
+                    currentPage++;
+                    displayTable(currentPage);
+                });
+                pagination.appendChild(nextBtn);
+            }
+        }
+
+        if (rows.length > rowsPerPage) {
+            displayTable(currentPage);
+        }
+    });
+
+    // Auto-hide success messages after 5 seconds
+    document.querySelectorAll('.alert-success').forEach(function(alert) {
+        setTimeout(function() {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-10px)';
+            setTimeout(function() {
+                alert.remove();
+            }, 300);
+        }, 5000);
+    });
+</script>
+
+{% endblock %}

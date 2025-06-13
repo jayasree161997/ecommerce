@@ -1,0 +1,259 @@
+{% extends 'custom_admin/index.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">User Management</h2>
+        </div>
+        <div class="text-muted">
+            <small>Total Users: {{ users|length }}</small>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
+                <i class="fas fa-check-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Search Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form method="GET" action="{% url 'custom_admin:users' %}">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                class="form-control border-start-0 ps-0" 
+                                placeholder="Search by username or email..."
+                                value="{{ search_query }}"
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid gap-2 d-md-flex">
+                            <button class="btn btn-primary px-4" type="submit">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            {% if search_query %}
+                                <a href="{% url 'custom_admin:users' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Clear
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 text-dark">
+                <i class="fas fa-users me-2"></i>User Accounts
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="border-0 py-3 px-4 fw-semibold text-dark">
+                                    <i class="fas fa-user me-2"></i>Username
+                                </th>
+                                <th class="border-0 py-3 px-4 fw-semibold text-dark">
+                                    <i class="fas fa-envelope me-2"></i>Email
+                                </th>
+                                <th class="border-0 py-3 px-4 fw-semibold text-dark">
+                                    <i class="fas fa-phone me-2"></i>Mobile
+                                </th>
+                                <th class="border-0 py-3 px-4 fw-semibold text-dark">
+                                    <i class="fas fa-circle me-2"></i>Status
+                                </th>
+                                <th class="border-0 py-3 px-4 fw-semibold text-dark text-center">
+                                    <i class="fas fa-cog me-2"></i>Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr class="border-bottom">
+                                    <td class="py-3 px-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-3">
+                                                {{ user.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold text-dark">{{ user.username }}</div>
+                                                <small class="text-muted">ID: {{ user.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="text-dark">{{ user.email }}</span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if user.profile.mobile_number %}
+                                            <span class="text-dark">{{ user.profile.mobile_number }}</span>
+                                        {% else %}
+                                            <span class="text-muted fst-italic">Not provided</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                                <i class="fas fa-check-circle me-1"></i>Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">
+                                                <i class="fas fa-times-circle me-1"></i>Blocked
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <form method="POST" action="{% url 'custom_admin:block_unblock_user' %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                                            {% if user.is_active %}
+                                                <button 
+                                                    type="submit" 
+                                                    name="action" 
+                                                    value="block" 
+                                                    class="btn btn-outline-danger btn-sm px-3"
+                                                    onclick="return confirm('Are you sure you want to block this user?')"
+                                                >
+                                                    <i class="fas fa-ban me-1"></i>Block
+                                                </button>
+                                            {% else %}
+                                                <button 
+                                                    type="submit" 
+                                                    name="action" 
+                                                    value="activate" 
+                                                    class="btn btn-outline-success btn-sm px-3"
+                                                    onclick="return confirm('Are you sure you want to activate this user?')"
+                                                >
+                                                    <i class="fas fa-check me-1"></i>Activate
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-users text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-muted">No users found</h5>
+                    <p class="text-muted mb-0">
+                        {% if search_query %}
+                            No users match your search criteria.
+                        {% else %}
+                            There are no users in the system yet.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom Styles */
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+}
+
+.btn-outline-danger:hover {
+    transform: translateY(-1px);
+}
+
+.btn-outline-success:hover {
+    transform: translateY(-1px);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9ff;
+}
+
+.alert {
+    border-radius: 10px;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .avatar-circle {
+        width: 35px;
+        height: 35px;
+        font-size: 12px;
+    }
+}
+</style>
+{% endblock %}
