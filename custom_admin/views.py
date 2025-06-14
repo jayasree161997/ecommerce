@@ -1,3 +1,6 @@
+
+
+
 from django.shortcuts import render,get_list_or_404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
@@ -241,42 +244,7 @@ def edit_user(request, user_id):
 
 
 # @superuser_required
-# @login_required
-# def add_product(request):
-#     print("Request Method:", request.method)
-#     if request.method == 'POST':
-#         form = ProductForm(request.POST, request.FILES)
-#         print("POST data:", request.POST)
-#         print("FILES data:", request.FILES)
-#         if form.is_valid():
-#             form.save()
-#             messages.success(request, "Product added successfully!")
-#             print("Form is valid")
-#             return redirect('custom_admin:products_view')  
-#         else:
-#             print("Form errors:", form.errors)
-#     else:
-#         form = ProductForm()
-#     return render(request, 'custom_admin/add_product.html', {'form': form})
-
-
-# def add_product(request):
-#     if request.method == 'POST':
-#         form = ProductForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             product = form.save()
-#             # Save selected thumbnails
-#             thumbnails = form.cleaned_data.get('thumbnail_images')
-#             if thumbnails:
-#                 for thumbnail in thumbnails:
-#                     thumbnail.product = product
-#                     thumbnail.save()
-#             return redirect('custom_admin/products_view')  # Replace with your product list view name
-#     else:
-#         form = ProductForm()
-#     return render(request, 'custom_admin/add_product.html', {'form': form})
-
-
+@login_required
 def add_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
@@ -561,13 +529,7 @@ def order_list(request):
     orders = Order.objects.all().select_related('user', 'address')
     return render(request, 'custom_admin/order_management.html', {'orders': orders})
 
-# @login_required
-# def order_management(request):
-#     orders = Order.objects.all().select_related('user', 'address').prefetch_related('order_items__product').order_by('-created_at')
-#     paginator = Paginator(orders, 10)
-#     page_number = request.GET.get('page')
-#     orders = paginator.get_page(page_number)
-#     return render(request, 'custom_admin/order_management.html', {'orders': orders})
+
 @login_required
 def order_management(request):
     status_filter = request.GET.get('status')  # e.g., 'Pending', 'Delivered', etc.
@@ -606,65 +568,6 @@ def view_order_details(request, order_id):
 
 
 @login_required
-
-# def change_order_status(request, order_id, status):
-#     order = get_object_or_404(Order, id=order_id)
-
-#     if order.payment_method == 'RAZORPAY' and order.payment_status == 'Pending':
-#         messages.error(request, "This online payment isn't completed.")
-#         return redirect('custom_admin:order_management')
-
-
-#     # Prevent changes if the order is already cancelled
-#     if order.status == "Cancelled":
-#         messages.error(request, "This order was already cancelled. Status cannot be changed.")
-#         return redirect('custom_admin:order_management')
-
-#     # return request process
-#     if status == "Return Requested":
-#         if order.status == "Delivered":
-#             order.status = "Return Requested"
-#             order.save()
-#             messages.success(request, f"Return request placed for Order {order.id}.")
-#         else:
-#             messages.error(request, "Only delivered orders can be requested for return.")
-#         return redirect('custom_admin:order_management')
-
-#     elif status == "Return Accepted":
-#         if order.status == "Return Requested":
-#             order.status = "Return Accepted"
-#             order.save()
-#             messages.success(request, f"Return accepted for Order {order.id}.")
-#         else:
-#             messages.error(request, "Order must be in 'Return Requested' status to accept a return.")
-#         return redirect('custom_admin:order_management')
-
-#     elif status == "Return Rejected":
-#         if order.status == "Return Requested":
-#             order.status = "Return Rejected"
-#             order.save()
-#             messages.success(request, f"Return rejected for Order {order.id}.")
-#         else:
-#             messages.error(request, "Order must be in 'Return Requested' status to reject a return.")
-#         return redirect('custom_admin:order_management')
-
-#     elif status == "Return Completed":
-#         if order.status == "Return Accepted":
-#             order.status = "Return Completed"
-#             order.save()
-#             messages.success(request, f"Return process completed for Order {order.id}.")
-#         else:
-#             messages.error(request, "Order must be in 'Return Accepted' status to complete the return.")
-#         return redirect('custom_admin:order_management')
-    
-#     if status in ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"]:
-#         order.status = status
-#         order.save()
-#         messages.success(request, f"Order status changed to {status}.")
-#     else:
-#         messages.error(request, "Invalid status update.")
-
-#     return redirect('custom_admin:order_management')
 def change_order_status(request, order_id, status):
     order = get_object_or_404(Order, id=order_id)
 
@@ -1324,6 +1227,5 @@ def dashboard(request):
     }
 
     return render(request, 'custom_admin/dashboard.html', context)
-
 
 
