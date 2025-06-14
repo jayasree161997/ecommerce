@@ -331,7 +331,7 @@
     {% for error in form.name.errors %}
         <p class="text-danger">{{ error }}</p>
     {% endfor %}
-                <p>{{ form.name.label_tag }}<br>{{ form.name }}</p>
+                {% comment %} <p>{{ form.name.label_tag }}<br>{{ form.name }}</p> {% endcomment %}
             </div>
 
             <!-- Description -->
@@ -350,22 +350,7 @@
                 <p>{{ form.main_image.label_tag }}<br>{{ form.main_image }}</p>
             </div>
 
-           {% comment %} {% if form.instance.productthumbnail_set.all %}
-    <div class="image-preview">
-    <strong>Current Thumbnails:</strong><br>
-    <div class="thumbnails-container">
-        {% for thumb in form.instance.productthumbnail_set.all %}
-        <div class="thumb-item" style="display:inline-block; margin: 10px; text-align: center;">
-            <img src="{{ thumb.image.url }}" width="100" height="100" style="display:block; margin-bottom: 5px;">
-            <label>
-                <input type="checkbox" name="delete_thumbs" value="{{ thumb.id }}">
-                Delete
-            </label>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %} {% endcomment %}
+           
 {% if form.instance.thumbnails.all %}
     <div class="image-preview">
         <strong>Current Thumbnails:</strong><br>
@@ -396,7 +381,15 @@
             <div class="form-group"><p>{{ form.sold.label_tag }}<br>{{ form.sold }}</p></div>
             <div class="form-group"><p>{{ form.material.label_tag }}<br>{{ form.material }}</p></div>
             <div class="form-group"><p>{{ form.dimensions.label_tag }}<br>{{ form.dimensions }}</p></div>
-            <div class="form-group"><p>{{ form.weight.label_tag }}<br>{{ form.weight }}</p></div>
+            <div class="form-group">
+                <p>{{ form.weight.label_tag }}<br>{{ form.weight }}</p>{% if form.weight.errors %}
+        <div class="text-danger">
+            {% for error in form.weight.errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
             <div class="form-group"><p>{{ form.warranty.label_tag }}<br>{{ form.warranty }}</p></div>
             <div class="form-group"><p>{{ form.category.label_tag }}<br>{{ form.category }}</p></div>
             <div class="form-group"><p>{{ form.is_active.label_tag }}<br>{{ form.is_active }}</p></div>
