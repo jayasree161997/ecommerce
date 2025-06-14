@@ -19,6 +19,11 @@ class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="Category Name", blank=True, null=True)
     description = models.TextField(verbose_name="Category Description", blank=True, null=True)
     is_active = models.BooleanField(default=True)
+     discount_percentage = models.PositiveIntegerField()
+
+    def clean(self):
+        if self.discount_percentage > 30:
+            raise ValidationError("Discount too high")
 
     def __str__(self):
         return self.name
