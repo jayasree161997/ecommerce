@@ -9,6 +9,7 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
+import re
 
 
 
@@ -111,22 +112,27 @@ class ProductOffer(models.Model):
     offer_type = models.CharField(max_length=50)
 
     
-    
+
     def clean(self):
-        # Check maximum discount amount
-        if self.discount_amount > 2000:
-            raise ValidationError("Product offer discount amount cannot exceed ₹2000.")
+         if self.discount_amount is not None:
+              if self.discount_amount < 0:
+                   raise ValidationError("Discount amount cannot be negative.") 
+              
+              if self.product and self.product.price:
+                    try:
+                       percentage = (self.discount_amount / self.product.price) * 100
+                       if percentage > 30:
+                            raise ValidationError("Product offer discount cannot exceed 30% of product price.")
+                    except (ZeroDivisionError, TypeError):
+                         raise ValidationError("Invalid product price for discount calculation.")
+         
+         if self.start_date and self.end_date:
+              if self.end_date < self.start_date:
+                    raise ValidationError("End date cannot be before start date.")
         
-        # Check discount percentage
-        if self.product and self.product.price:  # make sure product and price exist
-            percentage = (self.discount_amount / self.product.price) * 100
-            if percentage > 30:
-                raise ValidationError("Product offer discount cannot exceed 30% of product price.")
-            
-        if self.end_date and self.start_date:
-            if self.end_date < self.start_date:
-                raise ValidationError("End date cannot be before start date.")
-    
+             
+                       
+         
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
@@ -146,13 +152,16 @@ class CategoryOffer(models.Model):
         return f"Offer on {self.category.name}"
     
     def clean(self):
+
+        if self.discount_amount < 0:
+            raise ValidationError("Discount amount cannot be negative.")
+        
         if self.discount_percentage > 30:
             raise ValidationError("Category offer discount cannot exceed 30%.")
 
 
 class ReferralOffer(models.Model):
-    # referrer = models.ForeignKey(User, related_name='referrals', on_delete=models.CASCADE)
-    # referred = models.ForeignKey(User, related_name='referred_by', on_delete=models.CASCADE)
+   
     
 
     referrer = models.ForeignKey(
@@ -311,13 +320,6 @@ class Order(models.Model):
              )             
                  
 
-    # def save(self, *args, **kwargs):
-    #     is_new = self.pk is None
-    #     super().save(*args, **kwargs)
-    #     if is_new:
-    #         self.reduce_stock()
-    #         self.record_sales()
-
     def save(self, *args, **kwargs):
         from home.models import Wallet, Transaction  # Avoid circular import issues
         
@@ -382,8 +384,7 @@ def save(self, *args, **kwargs):
     if self.payment_method == "COD" and not self.cod_transaction_id:
         self.cod_transaction_id = self.generate_cod_transaction_id()
 
-    # if self.status == "Shipped" and not self.delivery_date:
-    #         self.delivery_date = now() + timedelta(days=7) 
+     
     
 
     super().save(*args, **kwargs)
@@ -466,6 +467,14 @@ class Coupon(models.Model):
 
     def __str__(self):
         return self.code
+    
+    def clean(self):
+        if not re.fullmatch(r'[A-Z]+', self.code):
+            raise ValidationError("Coupon code must contain only uppercase letters with no spaces, numbers, or symbols.")
+        
+        if self.valid_until < self.valid_from:
+             raise ValidationError("Valid until date cannot be earlier than valid from date.")
+
 
 
     def is_valid(self):
@@ -480,6 +489,10 @@ class Sales(models.Model):
     def __str__(self):
         return f"Sales for {self.product.name} on {self.date}"
     
+
+
+
+
 
 
 
