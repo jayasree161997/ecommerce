@@ -33,11 +33,14 @@ class ProductForm(forms.ModelForm):
             'is_active': 'Product Status (Active/Inactive)'
         }
 
-    # def clean_name(self):
-    #     name = self.cleaned_data.get('name')
-    #     if not re.match(r'^[A-Za-z]+$', name):
-    #         raise forms.ValidationError("Product name must contain only letters (no numbers, spaces, or symbols).")
-    #     return name  
+    
+    def clean_weight(self):
+        weight = self.cleaned_data.get('weight')
+        if weight is not None and weight < 0:
+            raise ValidationError("Weight cannot be negative.")
+        return weight
+
+  
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -133,6 +136,7 @@ class ProductOfferForm(forms.ModelForm):
             'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
+
         
     def clean(self):
         cleaned_data = super().clean()
@@ -140,6 +144,12 @@ class ProductOfferForm(forms.ModelForm):
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
         product = cleaned_data.get('product')
+
+
+
+        if discount_amount is not None:
+            if discount_amount < 0:
+                self.add_error('discount_amount', "Discount amount cannot be negative.")
 
        
         if product and discount_amount:
@@ -223,6 +233,8 @@ class CouponForm(forms.ModelForm):
 class SalesReportForm(forms.Form):
     start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     end_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+
 
 
 
