@@ -103,12 +103,7 @@
                 <p>Payment Method: {{ order_with_products.payment_method }}</p>
                 <p>Payment Status: {{ order_with_products.payment_status }}</p>
                
-{% comment %}                    
-                    {% if order_with_products.payment_method == 'COD' %}
-                    {{ order_with_products.cod_transaction_id }} 
-                    {% else %}
-                    {{ order_with_products.razorpay_payment_id }}
-                    {% endif %} {% endcomment %}
+
                     <p>Transaction ID: 
     {% if order_with_products.payment_method|lower == 'cash_on_delivery' and order_with_products.cod_transaction_id %}
         {{ order_with_products.cod_transaction_id }}
@@ -138,24 +133,8 @@
                                 Try Again
                             </a>
                      {% endif %}
-{% comment %}                     
-                    {% if order_with_products.order.status != "Cancelled" and order_with_products.order.status != "Delivered" and order_with_products.order.status != "Return Completed" and order_with_products.order.status != "Return Accepted" and order_with_products.order.status != "Return Rejected" %}
-                        {% if order_with_products.order.payment_method == "cash_on_delivery" %}
-                            <a href="#" class="btn btn-danger btn-sm cancel-order-btn" 
-                               data-bs-toggle="modal" 
-                               data-bs-target="#cancelOrderModal{{ order_with_products.order.id }}">
-                                Cancel Order
-                            </a>
-                       
-                        {% elif order_with_products.order.payment_status == "Success" %}
-                            <a href="#" class="btn btn-danger btn-sm cancel-order-btn" 
-                               data-bs-toggle="modal" 
-                               data-bs-target="#cancelOrderModal{{ order_with_products.order.id }}">
-                                Cancel Order
-                            </a>
-                        {% endif %}
-                    {% endif %} {% endcomment %}
-                   {% comment %} {% if order_with_products.status == "Pending" and order_with_products.payment_method != "RAZORPAY" or order_with_products.payment_status != "Pending" %} {% endcomment %}
+                   
+               
           {% if order_with_products.status == "Pending" and order_with_products.payment_method != "RAZORPAY" or order_with_products.payment_status != "Pending" and order_with_products.status != "Delivered" and order_with_products.status != "Return Requested" and order_with_products.status != "Cancelled" %}
 
 
@@ -172,7 +151,7 @@
                         View
                     </a>
 
-                    {% comment %} {% if order_with_products.order.status != "Cancelled" %} {% endcomment %}
+                   
                     {% if order_with_products.status != "Cancelled" and order_with_products.status != "Returned" %}
 
 
@@ -432,50 +411,6 @@ if (orderStatusElement) {
 });
     
     
-
-    {% comment %} fetch(`/return_order/${orderId}/`, {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": csrfToken,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ return_reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert("Return request completed. Amount credited to your wallet.");
-    
-            // Update order status in UI
-            const orderStatusElement = document.getElementById(`order-status-${orderId}`);
-            if (orderStatusElement) {
-                orderStatusElement.innerText = "Returned";
-                orderStatusElement.className = "badge bg-success text-light";
-            }
-    
-            // Update wallet balance in UI (if applicable)
-            const walletBalanceElement = document.getElementById("wallet-balance");
-            if (walletBalanceElement) {
-                let currentBalance = parseFloat(walletBalanceElement.innerText) || 0;
-                walletBalanceElement.innerText = (currentBalance + parseFloat(data.refund_amount)).toFixed(2);
-            }
-    
-            // Hide the modal
-            const returnModal = document.querySelector(`#returnOrderModal${orderId}`);
-            if (returnModal) {
-                const bootstrapModal = bootstrap.Modal.getInstance(returnModal);
-                if (bootstrapModal) {
-                    bootstrapModal.hide();
-                }
-            }
-        } else {
-            alert("Error: " + data.error);
-        }
-    })
-    .catch(error => {
-        alert("Something went wrong. Please try again.");
-    });
-     {% endcomment %}
 </script> 
 
 {% endblock %}
