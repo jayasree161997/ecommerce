@@ -16,13 +16,17 @@ import os
 from django.utils.timezone import now
 import datetime
 import pytz
+import re
 from django.utils.timezone import localtime
 from django.utils import timezone
 from datetime import datetime
 from .utils import send_otp_to_email
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from decimal import ROUND_DOWN
 from datetime import timedelta, date
 from django.core.cache import cache
+from django.views.decorators.cache import never_cache,cache_control
 from products.models import Product,ProductVariant,Order,Cart,CartItem,ProductOffer, CategoryOffer, ReferralOffer,OrderItem, Coupon
 from django.contrib.auth import update_session_auth_hash
 from .models import Profile
@@ -64,6 +68,8 @@ import uuid
 from payment.views import set_delivery_date
 from decimal import Decimal
 from datetime import timedelta
+from functools import wraps
+from django.utils.cache import add_never_cache_headers
 
 
 
@@ -73,8 +79,19 @@ logger = logging.getLogger(__name__)
 
 client = razorpay.Client(auth=("rzp_test_4MBYamMKeUifHI", "jCW28TZMPhifXUXSBo4CVB8I"))
 
-# Create your views here.
+
+def no_cache(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        response = view_func(request, *args, **kwargs)
+        add_never_cache_headers(response)
+        return response
+    return _wrapped_view
+
+
 @never_cache
+@login_required
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def index(request):
     return render(request,'user/index.html')
 
@@ -121,42 +138,75 @@ def user_login(request):
             return redirect('login')
     return render(request, 'user/login.html')
   
+
 def signup(request):
     if request.method == "POST":
         username = request.POST['username']
         email = request.POST['email']
         password = request.POST['password']
 
+        # ✅ Username must contain only alphabets
+        if not username.isalpha():
+            messages.error(request, "Username must contain only alphabets.")
+            return redirect('signup')
 
+        # ✅ Validate email format
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Invalid email format.")
+            return redirect('signup')
+
+        # ❌ Email already exists
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email is already registered. Please login or use another email.")
             return redirect('signup')
-        
-        myuser = User.objects.create_user(username, email, password)
+
+        # ✅ Password validation: at least 8 chars, contains letter, number, and symbol
+        if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return redirect('signup')
+
+        if not re.search(r'[A-Za-z]', password):
+            messages.error(request, "Password must contain at least one letter.")
+            return redirect('signup')
+
+        if not re.search(r'\d', password):
+            messages.error(request, "Password must contain at least one number.")
+            return redirect('signup')
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            messages.error(request, "Password must contain at least one symbol.")
+            return redirect('signup')
+
+        # ✅ All validations passed — create user
+        myuser = User.objects.create_user(username=username, email=email, password=password)
         myuser.save()
 
+        # 🔐 Generate OTP and store with 5-minute expiry
         otp = random.randint(1000, 9999)
-        # expiry_time = now() + datetime.timedelta(minutes=5)  # OTP expires in 5 minutes
         expiry_time = now() + timedelta(minutes=5)
-
-
-        # Store OTP and expiry in the session or cache
         cache.set(email, {'otp': otp, 'expiry': expiry_time}, timeout=300)
 
-        send_mail(
-            'Your OTP for Verification',
-            f'Your OTP is: {otp}. It will expire in 5 minutes.',
-            'jayasreeidhunov@gmail.com',  # Replace email
-            [email],
-            fail_silently=False,
-        )
+        # ✅ Send OTP to email
+        try:
+            send_mail(
+                'Your OTP for Verification',
+                f'Your OTP is: {otp}. It will expire in 5 minutes.',
+                'jayasreeidhunov@gmail.com',  # Must match your settings.py
+                [email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            messages.error(request, f"Failed to send OTP: {str(e)}")
+            return redirect('signup')
 
+        # ✅ Store email in session for verification page
         request.session['email'] = email
         messages.success(request, "OTP sent to your email. Please verify.")
         return redirect('otp_verification')
 
     return render(request, 'user/signup.html')
-
 
 def otp_verification(request):
     if request.method == "POST":
@@ -357,165 +407,7 @@ def cart(request):
 
 logger = logging.getLogger(__name__)
 
-# @login_required
-# def checkout(request):
-#     addresses = Address.objects.filter(user=request.user)
-#     cart, created = Cart.objects.get_or_create(user=request.user)
-#     cart_items = CartItem.objects.filter(cart=cart)
 
-#     #  Check for inactive categories - but don't block checkout entirely
-#     valid_cart_items = []
-#     unavailable_items = []
-
-#     # for item in cart_items:
-#     #     if not item.product.category.is_active :
-#     #         unavailable_items.append(item)  # Store unavailable items
-#     #     else:
-#     #         valid_cart_items.append(item)  # Only process valid items
-#     for item in cart_items:
-#         product = item.product
-#         category_active = product.category.is_active if product.category else True
-
-#         if product.is_deleted or not (product.is_active and category_active and product.stock > 0):
-#             unavailable_items.append(item)  # Mark unavailable products
-#         else:
-#             valid_cart_items.append(item)
-
-#     # If all items are inactive, redirect
-#     if not valid_cart_items:
-#         messages.error(request, "All items in your cart are unavailable. Please update your cart.")
-#         return redirect('cart')
-
-#     #  Prepare checkout calculation with only valid items
-#     cart_items_with_total = []
-#     total_price = Decimal('0.0')
-
-#     for item in valid_cart_items:
-#         if item.quantity > item.product.stock:
-#             messages.error(request, f"Only {item.product.stock} units available for {item.product.name}. Please update your cart.")
-#             return redirect('cartpage')
-
-#         item_total = Decimal(str(item.price)) * item.quantity
-#         total_price += item_total
-#         cart_items_with_total.append({'item': item, 'item_total': item_total})
-
-#     #  Handle coupon discounts
-#     discount_amount = Decimal('0.0')
-#     coupon_data = request.session.get('applied_coupon')
-
-#     if coupon_data and coupon_data.get('code') and coupon_data.get('discount_amount'):
-#         code = coupon_data['code']
-#         try:
-#             coupon = Coupon.objects.get(code=code)
-#             if "coupon_id" in request.session:
-#                 discount_amount = Decimal(str(coupon_data['discount_amount']))
-#             else:
-#                 request.session.pop('applied_coupon', None)
-#         except Coupon.DoesNotExist:
-#             request.session.pop('applied_coupon', None)
-
-#     final_price = total_price - discount_amount
-
-#     #  Add delivery charge
-#     delivery_charge = Decimal('60')
-#     final_price += delivery_charge
-
-#     # Ensure Razorpay compatibility
-#     # final_price = int(final_price)
-
-#     final_price = final_price.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
-
-#     if final_price < 0:
-#         messages.error(request, "Invalid total price. Please review your cart.")
-#         return redirect('cartpage')
-
-#     #  Handle order placement
-#     if request.method == 'POST':
-#         selected_address_id = request.POST.get('address_id')
-#         if not selected_address_id:
-#             messages.error(request, "Please select an address.")
-#             return redirect('checkoutpage')
-
-#         payment_option = request.POST.get('payment_option')
-#         if not payment_option:
-#             messages.error(request, "Please select a payment option.")
-#             return redirect('checkoutpage')
-
-#         selected_address = get_object_or_404(Address, id=selected_address_id, user=request.user)
-
-#         order = Order.objects.create(
-#             user=request.user,
-#             address=selected_address,
-#             total_price=final_price,
-#             status='Pending',
-#             payment_method=payment_option.upper(),
-#             coupon=coupon if coupon_data else None,
-#             coupon_code=coupon_data['code'] if coupon_data else '',
-#             discount_amount=discount_amount,
-#              delivery_charge=delivery_charge,
-#         )
-#         order.save()
-
-#         for item in valid_cart_items:  
-#             OrderItem.objects.create(
-#                 order=order,
-#                 product=item.product,
-#                 quantity=item.quantity,
-#                 price=item.price
-#             )
-
-
-#         CartItem.objects.filter(cart=cart).delete()
-#         cart.coupon_code = ''
-#         cart.discount_amount = 0
-#         cart.save()
-#         request.session.pop('coupon_id', None)
-#         request.session.pop('applied_coupon', None)
-
-#         if payment_option == 'razorpay':
-#             client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-#             payment = client.order.create({
-#                 # "amount": final_price * 100,
-#                 "amount": int(final_price * 100), 
-#                 "currency": "INR",
-#                 "payment_capture": 1
-#             })
-
-#             order.razorpay_payment_id = payment['id']
-#             order.save()
-
-#             context = {
-#                 'payment': payment,
-#                 'order': order,
-#                 'addresses': addresses,
-#                 'cart_items': cart_items_with_total,
-#                 'total_price': total_price,
-#                 'discount_amount': discount_amount,
-#                 'delivery_charge': delivery_charge,
-#                 'final_price': final_price,
-#                 'subtotal_after_discount': total_price - discount_amount
-#             }
-#             return render(request, 'user/razorpay_payment.html', context)
-
-#         elif payment_option == 'cod':
-#             order.status = 'Pending'
-#             order.payment_status = 'Pending'
-#             order.save()
-#             order.reduce_stock()
-#             CartItem.objects.filter(cart=cart).delete()
-#             messages.success(request, "Order placed successfully with Cash on Delivery!")
-#             return redirect('my_orders')
-
-#     #  Render checkout page
-#     context = {
-#         'addresses': addresses,
-#         'cart_items': cart_items_with_total,
-#         'total_price': total_price,
-#         'discount_amount': discount_amount,
-#         'delivery_charge': delivery_charge,
-#         'final_price': final_price,
-#     }
-#     return render(request, 'user/checkoutpage.html', context)
 
 @login_required
 def checkout(request):
@@ -543,10 +435,6 @@ def checkout(request):
     total_price = Decimal('0.0')
 
     for item in valid_cart_items:
-        if item.quantity > item.product.stock:
-            messages.error(request, f"Only {item.product.stock} units available for {item.product.name}. Please update your cart.")
-            return redirect('cartpage')
-
         item_total = Decimal(str(item.price)) * item.quantity
         total_price += item_total
         cart_items_with_total.append({'item': item, 'item_total': item_total})
@@ -567,7 +455,6 @@ def checkout(request):
             if total_price >= 30000:
                 discount_amount = (coupon.discount / 100) * total_price
             else:
-                # Invalidate coupon if total doesn't meet the requirement
                 cart.coupon_code = ''
                 cart.discount_amount = 0
                 cart.coupon = None
@@ -585,7 +472,6 @@ def checkout(request):
     final_price = total_price - discount_amount
     delivery_charge = Decimal('60.0')
     final_price += delivery_charge
-
     final_price = final_price.quantize(Decimal('0.01'), rounding=ROUND_DOWN)
 
     if final_price < 0:
@@ -607,6 +493,15 @@ def checkout(request):
 
         selected_address = get_object_or_404(Address, id=selected_address_id, user=request.user)
 
+        # ✅ Validate stock AGAIN just before placing the order
+        for item in valid_cart_items:
+            product = item.product
+            product.refresh_from_db()
+            if item.quantity > product.stock:
+                messages.error(request, f"Sorry, only {product.stock} units left for {product.name}. Please update your cart.")
+                return redirect('cartpage')
+
+        # ✅ Create Order only after passing stock validation
         order = Order.objects.create(
             user=request.user,
             address=selected_address,
@@ -619,10 +514,15 @@ def checkout(request):
             delivery_charge=delivery_charge,
         )
 
+        # ✅ Reduce stock and create OrderItems
         for item in valid_cart_items:
+            product = item.product
+            product.stock -= item.quantity
+            product.save()
+
             OrderItem.objects.create(
                 order=order,
-                product=item.product,
+                product=product,
                 quantity=item.quantity,
                 price=item.price
             )
@@ -662,8 +562,6 @@ def checkout(request):
             order.status = 'Pending'
             order.payment_status = 'Pending'
             order.save()
-            order.reduce_stock()
-            CartItem.objects.filter(cart=cart).delete()
             messages.success(request, "Order placed successfully with Cash on Delivery!")
             return redirect('my_orders')
 
@@ -718,11 +616,6 @@ def place_order(request):
         valid_cart_items = []
         unavailable_items = []
 
-        # for item in cart_items:
-        #     if not item.product.category.is_active:
-        #         unavailable_items.append(item)  # Store inactive items separately
-        #     else:
-        #         valid_cart_items.append(item)  
         for item in cart_items:
             product = item.product
             category_active = product.category.is_active if product.category else True
@@ -863,33 +756,6 @@ def place_order(request):
 
 
 
-# @login_required
-# def my_orders(request):
-#     orders = Order.objects.filter(user=request.user).prefetch_related('order_items__product').order_by('-created_at')
-
-#     order_data = []
-
-#     for order in orders:
-#         products = [
-#             {
-#                 'name': item.product.name,
-#                 'price': item.price or item.product.price,
-#                 'quantity': item.quantity,
-#                 'main_image': item.product.main_image.url if item.product.main_image else 'https://via.placeholder.com/80'
-#             }
-#             for item in order.order_items.all()
-#         ]
-
-#         logger.info(f"Order {order.id} has {order.order_items.count()} items, items={list(order.order_items.values('id', 'product__name', 'quantity'))}")
-
-#         order_data.append({
-#             'order': order,
-#             'products': products,
-#             'transaction_id': order.razorpay_payment_id or 'N/A',  
-#             'payment_status': order.payment_status 
-#         })
-
-#     return render(request, 'user/my_order.html', {'orders': order_data})
 
 
 
@@ -904,7 +770,7 @@ def my_orders(request):
 def cancel_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     
-    if order.status not in ['Delivered', 'Cancelled']:  # Only allow cancellation if not already delivered
+    if order.status not in ['Delivered', 'Cancelled']:  
         order.status = 'Cancelled'
         order.save()
     
@@ -1522,5 +1388,7 @@ def change_password(request):
             return redirect('user_profile')
     
     return redirect('user_profile')
+
+
 
 
