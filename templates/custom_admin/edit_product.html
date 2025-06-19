@@ -1,5 +1,6 @@
 {% extends 'custom_admin/index.html' %}
 {% load static %}
+{% load cropping %}
 
 {% block content %}
 <style>
@@ -347,12 +348,19 @@
                 </div>
             {% endif %}
             <div class="form-group">
+    {{ form.cropping.label_tag }}<br>
+    {{ form.cropping }}
+    {% for error in form.cropping.errors %}
+        <p class="text-danger">{{ error }}</p>
+    {% endfor %}
+</div>
+            <div class="form-group">
                 <p>{{ form.main_image.label_tag }}<br>{{ form.main_image }}</p>
             </div>
 
            
+            <div class="image-preview">
 {% if form.instance.thumbnails.all %}
-    <div class="image-preview">
         <strong>Current Thumbnails:</strong><br>
         <div class="thumbnails-container">
             {% for thumb in form.instance.thumbnails.all %}
@@ -370,9 +378,20 @@
 
 
 <!-- Select new thumbnails -->
-<div class="form-group">
+{% comment %} <div class="form-group">
     <p>{{ form.thumbnail_images.label_tag }}<br>{{ form.thumbnail_images }}</p>
+</div> {% endcomment %}
+<div class="form-group">
+    <label for="thumbnail_images">📸 Upload New Thumbnails</label>
+    <input type="file" name="thumbnail_images" id="thumbnail_images" multiple accept="image/*" style="display: none;">
+    <div class="file-input-text" onclick="document.getElementById('thumbnail_images').click();">
+        <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+        <div>Click to upload images</div>
+        <div class="file-upload-info">Upload 3-5 high-quality product images</div>
+    </div>
+    <div class="file-count" id="fileCount"></div>
 </div>
+
 
             <!-- Other Fields -->
             <div class="form-group"><p>{{ form.brand.label_tag }}<br>{{ form.brand }}</p></div>
@@ -424,6 +443,40 @@ fileInput.addEventListener('change', function() {
         ${fileNames.map(name => `• ${name.length > 30 ? name.substring(0, 30) + '...' : name}`).join('<br>')}
     `;
 });
+
+    const fileInput = document.getElementById('thumbnail_images');
+    const fileCount = document.getElementById('fileCount');
+
+    fileInput.addEventListener('change', function() {
+        const files = this.files;
+        const fileNames = Array.from(files).map(file => file.name);
+
+        if (files.length === 0) {
+            fileCount.textContent = '';
+            return;
+        }
+
+        if (files.length > 0 && (files.length < 3 || files.length > 5)) {
+            alert(" Please upload either no images or between 3 and 5 images.");
+            this.value = "";
+            fileCount.textContent = '';
+            return;
+        }
+
+        fileCount.innerHTML = `
+            <strong>${files.length} files selected:</strong><br>
+            ${fileNames.map(name => `• ${name.length > 30 ? name.substring(0, 30) + '...' : name}`).join('<br>')}
+        `;
+    });
+
+    // Optional: form submit loading state
+    document.querySelector('form').addEventListener('submit', function () {
+        const btn = document.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = 'Updating Product... ';
+    });
+
+
 </script>
 
 
