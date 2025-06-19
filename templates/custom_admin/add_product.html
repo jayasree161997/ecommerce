@@ -1,7 +1,9 @@
 {% extends 'custom_admin/index.html' %}
 {% load static %}
+{% load cropping %}
 
 {% block content %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet" />
 <style>
     .form-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -262,14 +264,24 @@
 
             <div class="form-content">
                 {% for field in form %}
-                <div class="form-group">
+                {% if field.name != 'main_image' and field.name != 'cropping' %}
+                <div class="form-group">  
                     {{ field.label_tag }}
                     {{ field }}
                     {% for error in field.errors %}
                         <span class="error">{{ error }}</span>
                     {% endfor %}
                 </div>
+                {% endif %}
                 {% endfor %}
+
+                 <div class="form-group">
+                    <label for="main_image">📷 Main Product Image</label>
+                    <input type="file" name="main_image" id="main_image" accept="image/*" required>
+                    <img id="imagePreview" />
+                    <input type="hidden" name="cropping" id="cropping">
+                </div>
+
                 
                 <div class="form-group">
                     <label for="thumbnail_images">📸 Thumbnail Images</label>
@@ -289,50 +301,96 @@
         </form>
     </div>
 </div>
+<!-- CropperJS CSS -->
+
+
+<!-- CropperJS JS -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script>
+    let cropper;
+
+    const imageInput = document.getElementById('main_image');
+    const imagePreview = document.getElementById('imagePreview');
+    const croppingInput = document.getElementById('cropping');
     const fileInput = document.getElementById('thumbnail_images');
     const fileCount = document.getElementById('fileCount');
-    
-fileInput.addEventListener('change', function() {
-    const files = this.files;
-    const fileNames = Array.from(files).map(file => file.name);
+    const productForm = document.getElementById('productForm');
+    const submitBtn = document.querySelector('.submit-btn');
 
-    if (files.length === 0) {
-        fileCount.textContent = '';
-        return;
-    }
+    // Main image cropping setup
+    imageInput.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-    if (files.length > 0 && (files.length < 3 || files.length > 5)) {
-        alert("⚠️ Please upload either no images or between 3 and 5 images.");
-        this.value = "";
-        fileCount.textContent = '';
-        return;
-    }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
 
-    fileCount.innerHTML = `
-        <strong>${files.length} files selected:</strong><br>
-        ${fileNames.map(name => `• ${name.length > 30 ? name.substring(0, 30) + '...' : name}`).join('<br>')}
-    `;
-});
+            if (cropper) {
+                cropper.destroy();
+            }
 
-    // Form submission loading state
-    document.getElementById('productForm').addEventListener('submit', function(e) {
-        const submitBtn = document.querySelector('.submit-btn');
-        submitBtn.innerHTML = '<span>Adding Product... ⏳</span>';
+            cropper = new Cropper(imagePreview, {
+                aspectRatio: 1,
+                viewMode: 1,
+                autoCropArea: 1,
+                crop() {
+                    const cropData = cropper.getData(true);
+                    croppingInput.value = `${Math.round(cropData.x)},${Math.round(cropData.y)},${Math.round(cropData.x + cropData.width)},${Math.round(cropData.y + cropData.height)}`;
+                }
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Thumbnail validation
+    fileInput.addEventListener('change', function () {
+        const files = this.files;
+        const fileNames = Array.from(files).map(file => file.name);
+
+        if (files.length === 0) {
+            fileCount.textContent = '';
+            return;
+        }
+
+        if (files.length < 3 || files.length > 5) {
+            alert(" Please upload between 3 and 5 images.");
+            this.value = "";
+            fileCount.textContent = '';
+            return;
+        }
+
+        fileCount.innerHTML = `
+            <strong>${files.length} files selected:</strong><br>
+            ${fileNames.map(name => `• ${name.length > 30 ? name.substring(0, 30) + '...' : name}`).join('<br>')}
+        `;
+    });
+
+    // Submit handler
+    productForm.addEventListener('submit', function () {
+        if (cropper) {
+            const cropData = cropper.getData(true);
+            croppingInput.value = `${Math.round(cropData.x)},${Math.round(cropData.y)},${Math.round(cropData.x + cropData.width)},${Math.round(cropData.y + cropData.height)}`;
+        }
+
+        submitBtn.innerHTML = '<span>Adding Product... </span>';
         submitBtn.disabled = true;
     });
-    
-    // Add smooth focus transitions
+
+    // Focus animations
     document.querySelectorAll('input, select, textarea').forEach(element => {
-        element.addEventListener('focus', function() {
+        element.addEventListener('focus', function () {
             this.parentElement.style.transform = 'scale(1.02)';
         });
-        
-        element.addEventListener('blur', function() {
+
+        element.addEventListener('blur', function () {
             this.parentElement.style.transform = 'scale(1)';
         });
     });
 </script>
+
 
 {% endblock %}
